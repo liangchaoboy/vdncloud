@@ -58,9 +58,9 @@ func main() {
 
 			if ok {
 				top[key] = top[key] + value
+			} else {
+				top[key] = value
 			}
-
-			top[key] = value
 		}
 	}
 
