@@ -15,16 +15,17 @@ import (
 
 type top struct {
 	url   string
-	count int
+	value int
 }
 
 type toplist []top
 
 func (p toplist) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p toplist) Len() int           { return len(p) }
-func (p toplist) Less(i, j int) bool { return p[i].count < p[j].count }
+func (p toplist) Less(i, j int) bool { return p[i].value < p[j].value }
 
 func sortMapByValue(m map[string]int) toplist {
+
 	p := make(toplist, len(m))
 	i := 0
 	for k, v := range m {
@@ -42,8 +43,11 @@ func main() {
 
 	// url 、访问次数
 	var top map[string]int
-
 	top = make(map[string]int)
+
+	// url、 访问流量
+	var topflow map[string]int
+	topflow = make(map[string]int)
 
 	urls := getUrl("2019-04-07", ak, sk)
 
@@ -60,8 +64,27 @@ func main() {
 		}
 	}
 
+	for _, f := range urls {
+
+		for key, value := range getFlow(f) {
+			_, ok := topflow[key]
+
+			if ok {
+				topflow[key] = topflow[key] + value
+			}
+
+			topflow[key] = value
+		}
+	}
+
 	for _, sortCount := range sortMapByValue(top) {
 		fmt.Println(sortCount)
+	}
+
+	fmt.Println("\n")
+
+	for _, sortflow := range sortMapByValue(topflow) {
+		fmt.Println(sortflow)
 	}
 
 }
@@ -143,6 +166,42 @@ func getCount(str string) map[string]int {
 	for index := 0; index < len(i); index++ {
 		if strings.Contains(i[index], "http") {
 
+			k := strings.Split(i[index], ",")
+			intk, _ := strconv.Atoi(k[2])
+			top[k[0]] = intk
+		}
+	}
+
+	return top
+
+}
+
+// 获取 url 和访问流量
+func getFlow(str string) map[string]int {
+
+	var top map[string]int
+
+	top = make(map[string]int)
+
+	resp, err := http.Get(str)
+
+	if err != nil {
+		// handle error
+	}
+
+	defer resp.Body.Close()
+	body, errs := ioutil.ReadAll(resp.Body)
+
+	if errs != nil {
+		// handle error
+	}
+
+	t := string(body)
+
+	var i []string = strings.Split(t, "\n")
+
+	for index := 0; index < len(i); index++ {
+		if strings.Contains(i[index], "http") {
 			k := strings.Split(i[index], ",")
 			intk, _ := strconv.Atoi(k[1])
 			top[k[0]] = intk
