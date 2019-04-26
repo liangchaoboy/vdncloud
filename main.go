@@ -1,5 +1,4 @@
 package main
-
 import (
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,8 @@ import (
 
 	"github.com/qiniu/api.v7/auth/qbox"
 	"github.com/qiniu/api.v7/storage"
+	//"regexp"
+	"regexp"
 )
 
 type top struct {
@@ -23,6 +24,7 @@ type toplist []top
 func (p toplist) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 func (p toplist) Len() int           { return len(p) }
 func (p toplist) Less(i, j int) bool { return p[i].value < p[j].value }
+
 
 func sortMapByValue(m map[string]int) toplist {
 
@@ -47,9 +49,10 @@ func main() {
 
 	// url、 访问流量
 	var topflow map[string]int
+
 	topflow = make(map[string]int)
 
-	urls := getUrl("2019-04-07", ak, sk)
+	urls := getUrl("2019-04-25", ak, sk)
 
 	for _, j := range urls {
 
@@ -78,16 +81,19 @@ func main() {
 	}
 
 	for _, sortCount := range sortMapByValue(top) {
+
 		fmt.Println(sortCount)
 	}
 
 	fmt.Println("\n")
 
 	for _, sortflow := range sortMapByValue(topflow) {
+
 		fmt.Println(sortflow)
 	}
 
 }
+
 
 // 获取下载链接 date:2019-03-29
 func getUrl(date string, ak string, sk string) []string {
@@ -139,6 +145,7 @@ func getUrl(date string, ak string, sk string) []string {
 	return s
 }
 
+
 // 获取 url 和访问次数
 func getCount(str string) map[string]int {
 
@@ -153,6 +160,7 @@ func getCount(str string) map[string]int {
 	}
 
 	defer resp.Body.Close()
+
 	body, errs := ioutil.ReadAll(resp.Body)
 
 	if errs != nil {
@@ -163,18 +171,29 @@ func getCount(str string) map[string]int {
 
 	var i []string = strings.Split(t, "\n")
 
+
 	for index := 0; index < len(i); index++ {
+
 		if strings.Contains(i[index], "http") {
 
 			k := strings.Split(i[index], ",")
 			intk, _ := strconv.Atoi(k[2])
-			top[k[0]] = intk
+
+			if strings.Contains(k[0], "D"){
+
+				re := regexp.MustCompile("(.+)(http://?(.+)m3u8$)")
+				reReq := re.ReplaceAllString(k[0],"$2")
+				top[reReq] = intk
+			}else{
+				top[k[0]] = intk
+			}
 		}
 	}
 
 	return top
 
 }
+
 
 // 获取 url 和访问流量
 func getFlow(str string) map[string]int {
@@ -190,6 +209,7 @@ func getFlow(str string) map[string]int {
 	}
 
 	defer resp.Body.Close()
+
 	body, errs := ioutil.ReadAll(resp.Body)
 
 	if errs != nil {
@@ -201,13 +221,21 @@ func getFlow(str string) map[string]int {
 	var i []string = strings.Split(t, "\n")
 
 	for index := 0; index < len(i); index++ {
+
 		if strings.Contains(i[index], "http") {
 			k := strings.Split(i[index], ",")
+
 			intk, _ := strconv.Atoi(k[1])
-			top[k[0]] = intk
+
+			if strings.Contains(k[0], "D"){
+
+				re := regexp.MustCompile("(.+)(http://?(.+)m3u8$)")
+				reReq := re.ReplaceAllString(k[0],"$2")
+				top[reReq] = intk
+			}else{
+				top[k[0]] = intk
+			}
 		}
 	}
-
 	return top
-
 }
